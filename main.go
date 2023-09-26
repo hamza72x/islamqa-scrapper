@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/hamza72x/islamqa-scrapper/content"
 	"github.com/hamza72x/islamqa-scrapper/log"
-	scapper "github.com/hamza72x/islamqa-scrapper/scrapper"
+	"github.com/hamza72x/islamqa-scrapper/scrapper"
 	"github.com/hamza72x/islamqa-scrapper/sitemap"
 
 	"gorm.io/driver/sqlite"
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// create scrapper
-	s := scapper.New(db)
+	s := scrapper.New(db)
 
 	// sync sitemaps
 	errs := s.SyncSitemaps(siteMaps)
