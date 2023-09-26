@@ -1,10 +1,10 @@
 package main
 
 import (
-	"islam-qa-scrapper/content"
-	"islam-qa-scrapper/log"
-	scapper "islam-qa-scrapper/scrapper"
-	"islam-qa-scrapper/sitemap"
+	"github.com/hamza72x/islamqa-scrapper/content"
+	"github.com/hamza72x/islamqa-scrapper/log"
+	scapper "github.com/hamza72x/islamqa-scrapper/scrapper"
+	"github.com/hamza72x/islamqa-scrapper/sitemap"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

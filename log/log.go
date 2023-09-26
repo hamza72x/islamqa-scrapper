@@ -2,8 +2,9 @@ package log
 
 import (
 	"fmt"
-	"islam-qa-scrapper/helper"
 	"os"
+
+	"github.com/hamza72x/islamqa-scrapper/helper"
 )
 
 const (
@@ -21,7 +22,6 @@ var (
 )
 
 func Initialize() {
-
 	helper.RemoveFileIfExists(LOG_FILE)
 
 	var err error

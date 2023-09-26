@@ -3,9 +3,10 @@ package content
 import (
 	"bytes"
 	"io"
-	"islam-qa-scrapper/log"
 	"net/http"
 	"strings"
+
+	"github.com/hamza72x/islamqa-scrapper/log"
 
 	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm"

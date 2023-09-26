@@ -2,13 +2,14 @@ package scapper
 
 import (
 	"errors"
-	"islam-qa-scrapper/content"
-	"islam-qa-scrapper/helper"
-	"islam-qa-scrapper/log"
-	"islam-qa-scrapper/sitemap"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/hamza72x/islamqa-scrapper/content"
+	"github.com/hamza72x/islamqa-scrapper/helper"
+	"github.com/hamza72x/islamqa-scrapper/log"
+	"github.com/hamza72x/islamqa-scrapper/sitemap"
 
 	"gorm.io/gorm"
 )

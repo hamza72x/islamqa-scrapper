@@ -1,4 +1,4 @@
-module islam-qa-scrapper
+module github.com/hamza72x/islamqa-scrapper
 
 go 1.20
 

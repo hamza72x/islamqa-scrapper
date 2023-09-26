@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"islam-qa-scrapper/helper"
 	"log"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/hamza72x/islamqa-scrapper/helper"
 
 	"gorm.io/gorm"
 )
