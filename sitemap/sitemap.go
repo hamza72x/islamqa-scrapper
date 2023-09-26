@@ -1,17 +1,11 @@
 package sitemap
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"log"
-	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/hamza72x/islamqa-scrapper/helper"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -39,84 +33,16 @@ type Sitemap struct {
 
 // URL is a structure of <url> in <sitemap>
 type URL struct {
-	gorm.Model
-	SitemapUrl string  `xml:"sitemap" gorm:"column:sitemap_url;index"`
-	Loc        string  `xml:"loc" gorm:"column:loc;uniqueIndex"`
-	LastMod    string  `xml:"lastmod" gorm:"column:last_mod"`
-	ChangeFreq string  `xml:"changefreq" gorm:"column:change_freq"`
-	Priority   float32 `xml:"priority" gorm:"column:priority"`
+	ID         uint      `gorm:"primarykey;column:id"`
+	SitemapUrl string    `xml:"sitemap" gorm:"column:sitemap_url;index"`
+	Loc        string    `xml:"loc" gorm:"column:loc;uniqueIndex"`
+	LastMod    time.Time `xml:"lastmod" gorm:"column:last_mod"`
+	ChangeFreq string    `xml:"changefreq" gorm:"-"`
+	Priority   float32   `xml:"priority" gorm:"-"`
 }
 
 func (URL) TableName() string {
 	return "urls"
-}
-
-// GetTime get time from url.LastMod
-func (url URL) GetTime() time.Time {
-	t, err := time.Parse(time.RFC3339, url.LastMod)
-	if err != nil {
-		log.Println("Error parsing time", url.LastMod, url)
-		return time.Now()
-	}
-	return t
-}
-
-// GetByWPJSON make urls from wp-json api
-// WpJsonUrl: https://www.muslimmedia.info/wp-json/wp/v2/posts?per_page=50
-// WpJsonUrl: https://www.muslimmedia.info/wp-json/wp/v2/posts?per_page=50&post_type=post
-func GetByWPJSON(wpJSONURL string, userAgent string) Sitemap {
-	var siteMap = Sitemap{}
-
-	type WpPost struct {
-		Date string `json:"date"`
-		Link string `json:"link"`
-	}
-
-	var page = 1
-	timeRegex := regexp.MustCompile(`\d+-\d+-\d+`)
-	for {
-		var posts []WpPost
-		u := wpJSONURL + "&page=" + strconv.Itoa(page)
-
-		log.Println("Getting urls from =>", u)
-
-		bytes, err := helper.GetURLBytes(u, userAgent)
-
-		if err != nil {
-			log.Println("Error getting up json", err)
-			break
-		}
-
-		if err := json.Unmarshal(bytes, &posts); err != nil {
-			log.Println("Error getting up json", err)
-			break
-		}
-
-		log.Println("Found posts count =>", len(posts))
-
-		for _, p := range posts {
-			t, err := time.Parse("2006-01-02", timeRegex.FindString(p.Date))
-
-			if err != nil {
-				log.Println(
-					"Error parsing Time",
-					"Regex found Time =>", timeRegex.FindString(p.Date),
-					"Original Time =>", p.Date,
-					"Sitemap input Time =>", t.Format(time.RFC3339),
-				)
-				continue
-			}
-
-			siteMap.URLS = append(siteMap.URLS, &URL{
-				SitemapUrl: wpJSONURL,
-				Loc:        p.Link,
-				LastMod:    t.Format(time.RFC3339),
-			})
-		}
-		page++
-	}
-
-	return siteMap
 }
 
 // Get sitemap data from URL

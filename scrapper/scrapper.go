@@ -2,12 +2,10 @@ package scrapper
 
 import (
 	"errors"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/hamza72x/islamqa-scrapper/content"
-	"github.com/hamza72x/islamqa-scrapper/helper"
 	"github.com/hamza72x/islamqa-scrapper/log"
 	"github.com/hamza72x/islamqa-scrapper/sitemap"
 
@@ -52,7 +50,7 @@ func (s *Scapper) SyncContents() error {
 			defer wg.Done()
 			ch <- i
 
-			if err := s.syncContent(url.Loc); err != nil {
+			if err := s.syncContent(url); err != nil {
 				log.Err(err)
 			}
 
@@ -137,12 +135,12 @@ func (s *Scapper) syncSitemap(sitemapURL string) error {
 	return nil
 }
 
-func (s *Scapper) syncContent(url string) error {
+func (s *Scapper) syncContent(url *sitemap.URL) error {
 	existingContent := &content.Content{}
 
 	if err := s.db.
 		Model(&content.Content{}).
-		Where("url = ?", url).
+		Where("url = ?", url.Loc).
 		First(existingContent).
 		Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -154,7 +152,7 @@ func (s *Scapper) syncContent(url string) error {
 		return nil
 	}
 
-	newContent, err := getContent(url)
+	newContent, err := content.New(url)
 	if err != nil {
 		return err
 	}
@@ -189,24 +187,98 @@ func (s *Scapper) syncContent(url string) error {
 	return nil
 }
 
-func getContent(url string) (*content.Content, error) {
+// for ContentV2
+func (s *Scapper) SyncContentsV2() error {
+	ch := make(chan int, THREADS)
+	wg := &sync.WaitGroup{}
 
-	resp, err := helper.GetURLResponse(url, "")
+	urls := []*sitemap.URL{}
 
+	if err := s.db.
+		Limit(1000).
+		Order("last_mod desc").
+		Find(&urls).
+		Error; err != nil {
+		return err
+	}
+
+	count := len(urls)
+	completed := 0
+
+	log.Ok("total urls to sync:", count)
+	time.Sleep(1 * time.Second)
+
+	for i, url := range urls {
+		wg.Add(1)
+		go func(i int, url *sitemap.URL) {
+			defer wg.Done()
+			ch <- i
+
+			if err := s.syncContentV2(url); err != nil {
+				log.Err(err)
+			}
+
+			completed++
+
+			if completed%100 == 0 {
+				log.Ok("completed", completed, "out of", count)
+			}
+
+			<-ch
+		}(i, url)
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func (s *Scapper) syncContentV2(url *sitemap.URL) error {
+	existingContent := &content.ContentV2{}
+
+	if err := s.db.
+		Model(&content.ContentV2{}).
+		Where("url = ?", url.Loc).
+		First(existingContent).
+		Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+	}
+
+	if existingContent.ID > 0 && existingContent.LastModified == url.LastMod {
+		return nil
+	}
+
+	newContent, err := content.NewV2(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	defer resp.Body.Close()
+	// update the content if it exists
+	if existingContent.ID > 0 {
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("status code is not ok, but: " + resp.Status)
+		if existingContent.Title == newContent.Title &&
+			existingContent.Content == newContent.Content &&
+			existingContent.LastModified == newContent.LastModified {
+			return nil
+		}
+
+		existingContent.Title = newContent.Title
+		existingContent.Content = newContent.Content
+		existingContent.LastModified = newContent.LastModified
+
+		if err := s.db.Save(existingContent).Error; err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	c, err := content.New(resp)
-	if err != nil {
-		return nil, err
+	// otherwise create a new one
+	if err := s.db.Create(newContent).Error; err != nil {
+		return err
 	}
 
-	return c, nil
+	return nil
 }

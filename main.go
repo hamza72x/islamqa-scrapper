@@ -21,7 +21,11 @@ func main() {
 	}
 
 	// migrate
-	if err := db.AutoMigrate(&sitemap.URL{}, &content.Content{}); err != nil {
+	if err := db.AutoMigrate(
+		&sitemap.URL{},
+		&content.Content{},
+		&content.ContentV2{},
+	); err != nil {
 		log.Fatal("failed to migrate database: " + err.Error())
 	}
 
@@ -36,8 +40,13 @@ func main() {
 		}
 	}
 
-	// sync conents
-	if err := s.SyncContents(); err != nil {
+	// // sync conents
+	// if err := s.SyncContents(); err != nil {
+	// 	log.Err(err)
+	// }
+
+	//  sync conents v2
+	if err := s.SyncContentsV2(); err != nil {
 		log.Err(err)
 	}
 }

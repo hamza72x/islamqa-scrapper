@@ -2,11 +2,15 @@ package content
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/hamza72x/islamqa-scrapper/helper"
 	"github.com/hamza72x/islamqa-scrapper/log"
+	"github.com/hamza72x/islamqa-scrapper/sitemap"
 
 	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm"
@@ -30,17 +34,33 @@ type Content struct {
 
 	// Body is the whole html body
 	Body string `gorm:"column:body"`
+
+	LastModified time.Time `gorm:"column:last_modified"`
 }
 
-func New(resp *http.Response) (*Content, error) {
+func New(url *sitemap.URL) (*Content, error) {
+
+	resp, err := helper.GetURLResponse(url.Loc, "")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("status code is not ok, but: " + resp.Status)
+	}
+
 	htmlBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Content{
-		URL:  resp.Request.URL.String(),
-		Body: string(htmlBytes),
+		URL:          resp.Request.URL.String(),
+		Body:         string(htmlBytes),
+		LastModified: url.LastMod,
 	}
 
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(htmlBytes))
